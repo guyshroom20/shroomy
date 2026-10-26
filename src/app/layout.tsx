@@ -32,7 +32,7 @@ export default async function RootLayout({
         <div className="relative mx-auto flex min-h-dvh w-full max-w-[440px] flex-col overflow-hidden bg-bg">
           <ToastProvider>
             <ProfilesProvider profiles={profiles}>
-              <MyListingProvider>
+              <MyListingProvider accountId={account?.role === "advertiser" ? account.id : undefined}>
                 <FiltersProvider>
                   <SavedProvider signedIn={Boolean(account)}>{children}</SavedProvider>
                 </FiltersProvider>

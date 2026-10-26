@@ -1,13 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { deleteMyListing, loadMyListing, saveMyListing, type RemoteListing } from "./data/my-listing-remote";
 import { ProfilesProvider, useProfiles } from "./profiles";
 import type { Availability, Photo, Profile, Tag } from "./types";
 
-// The signed-in advertiser's own listing, kept in localStorage until accounts
-// exist. Field names and limits mirror the `listings` and `listing_photos`
-// tables on the backend branch, so the save/load functions can be swapped for
-// Supabase calls (saveListing + uploadListingPhoto) without touching the UI.
+// The advertiser's own listing. For a signed-in advertiser it lives in
+// Supabase (`listings` + `listing_photos`); otherwise it's kept in
+// localStorage so the editor still works in the mock-data preview.
 
 /** Profile id used for the advertiser's own listing. Too short to clash with a real slug. */
 export const MY_LISTING_ID = "me";
@@ -19,6 +19,8 @@ export type ListingPhotoDraft = {
   position: number;
   /** Only shown to age-checked visitors. */
   is_locked: boolean;
+  /** Moderation state, once saved to the backend. */
+  status?: "pending" | "approved" | "rejected";
 };
 
 export type StoryDraft = {
@@ -135,51 +137,107 @@ export function listingToProfile(l: MyListing): Profile {
 type Ctx = {
   listing: MyListing | null;
   profile: Profile | null;
-  /** False until localStorage has been read, so pages don't flash an empty state. */
+  /** Moderation state when the listing is stored in the backend. */
+  remote: Pick<RemoteListing, "status" | "needsReview" | "listingId"> | null;
+  /** False until the listing has been loaded, so pages don't flash an empty state. */
   loaded: boolean;
-  save: (l: MyListing) => void;
-  remove: () => void;
+  /** Rejects with a user-facing message when saving fails. */
+  save: (l: MyListing) => Promise<void>;
+  remove: () => Promise<void>;
 };
 
 const MyListingCtx = createContext<Ctx | null>(null);
 const KEY = "my-listing";
+// Stories aren't in the backend schema yet, so they stay on the device.
+const STORY_KEY = "my-listing-story";
 
-export function MyListingProvider({ children }: { children: React.ReactNode }) {
+function readLocal<T>(key: string): T | undefined {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Throws when the browser is out of storage, so the editor can say so. */
+function writeLocal(key: string, value: unknown) {
+  try {
+    if (value === undefined) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    throw new Error("Not enough storage on this device. Remove a photo or two and try again.");
+  }
+}
+
+/** accountId is set for a signed-in advertiser when Supabase is configured. */
+export function MyListingProvider({ accountId, children }: { accountId?: string; children: React.ReactNode }) {
   const [listing, setListing] = useState<MyListing | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const remoteRef = useRef<RemoteListing | null>(null);
+  const [remote, setRemote] = useState<RemoteListing | null>(null);
   const others = useProfiles();
 
+  const applyRemote = useCallback((r: RemoteListing | null) => {
+    remoteRef.current = r;
+    setRemote(r);
+    setListing(r ? { ...r, story: readLocal(STORY_KEY) } : null);
+  }, []);
+
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setListing(JSON.parse(raw));
-    } catch {}
-    setLoaded(true);
-  }, []);
-
-  /** Throws when the browser is out of storage, so the editor can say so. */
-  const save = useCallback((l: MyListing) => {
-    const next = { ...l, updated_at: new Date().toISOString() };
-    try {
-      localStorage.setItem(KEY, JSON.stringify(next));
-    } catch {
-      throw new Error("Not enough storage on this device. Remove a photo or two and try again.");
+    if (!accountId) {
+      setListing(readLocal<MyListing>(KEY) ?? null);
+      setLoaded(true);
+      return;
     }
-    setListing(next);
-  }, []);
+    let cancelled = false;
+    loadMyListing(accountId)
+      .then((r) => !cancelled && applyRemote(r))
+      .catch(() => {})
+      .finally(() => !cancelled && setLoaded(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId, applyRemote]);
 
-  const remove = useCallback(() => {
+  const save = useCallback(
+    async (l: MyListing) => {
+      if (accountId) {
+        writeLocal(STORY_KEY, l.story);
+        applyRemote(await saveMyListing(accountId, l, remoteRef.current));
+        return;
+      }
+      const next = { ...l, updated_at: new Date().toISOString() };
+      writeLocal(KEY, next);
+      setListing(next);
+    },
+    [accountId, applyRemote],
+  );
+
+  const remove = useCallback(async () => {
+    if (accountId && remoteRef.current) await deleteMyListing(remoteRef.current);
     try {
-      localStorage.removeItem(KEY);
+      localStorage.removeItem(accountId ? STORY_KEY : KEY);
     } catch {}
-    setListing(null);
-  }, []);
+    applyRemote(null);
+  }, [accountId, applyRemote]);
 
   const profile = useMemo(() => (listing ? listingToProfile(listing) : null), [listing]);
-  const value = useMemo(() => ({ listing, profile, loaded, save, remove }), [listing, profile, loaded, save, remove]);
+  const remoteState = useMemo(
+    () => (remote ? { status: remote.status, needsReview: remote.needsReview, listingId: remote.listingId } : null),
+    [remote],
+  );
+  const value = useMemo(
+    () => ({ listing, profile, remote: remoteState, loaded, save, remove }),
+    [listing, profile, remoteState, loaded, save, remove],
+  );
   // Re-provide the profile list with the advertiser's own listing first, so it
-  // shows up in Explore, Saved and the filters like any other listing.
-  const withMine = useMemo(() => (profile ? [profile, ...others] : others), [profile, others]);
+  // shows up in Explore, Saved and the filters like any other listing. Once
+  // published it's also in the server list under its slug, so drop that copy.
+  const withMine = useMemo(
+    () => (profile ? [profile, ...others.filter((p) => p.id !== listing?.slug)] : others),
+    [profile, others, listing?.slug],
+  );
 
   return (
     <MyListingCtx.Provider value={value}>

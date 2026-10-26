@@ -6,8 +6,16 @@ import { ProfileView } from "@/components/profile/ProfileView";
 import { useMyListing } from "@/lib/my-listing";
 import { useToast } from "@/lib/toast";
 
+const statusCopy = {
+  draft: "Draft. Only you can see it.",
+  pending_review: "Waiting for a moderator.",
+  published: "Live.",
+  rejected: "Changes needed before it can go live.",
+  suspended: "Suspended.",
+} as const;
+
 export default function MyListingPage() {
-  const { profile, listing, loaded } = useMyListing();
+  const { profile, listing, remote, loaded } = useMyListing();
   const toast = useToast();
   if (!loaded) return null;
 
@@ -33,8 +41,7 @@ export default function MyListingPage() {
   }
 
   const share = async () => {
-    // Becomes /profile/<slug> once listings come from the backend.
-    const url = `${window.location.origin}/profile/me`;
+    const url = `${window.location.origin}/profile/${remote ? listing.slug : "me"}`;
     try {
       await navigator.clipboard.writeText(url);
       toast("Listing link copied");
@@ -47,10 +54,22 @@ export default function MyListingPage() {
     <ProfileView
       profile={profile}
       banner={
-        <p className="rounded-2xl bg-surface px-4 py-3 text-[13px] leading-snug text-fg-muted">
-          <span className="text-fg">Preview.</span> This is how visitors see your listing. Saved on this device until accounts
-          go live; then every edit is checked by a moderator.
-        </p>
+        remote ? (
+          <p className="rounded-2xl bg-surface px-4 py-3 text-[13px] leading-snug text-fg-muted">
+            <span className="text-fg">{statusCopy[remote.status]}</span>{" "}
+            {remote.needsReview && "Your latest edits are being checked. "}
+            {(remote.status === "draft" || remote.status === "rejected") && (
+              <Link href="/advertise" className="text-fg underline underline-offset-4">
+                Verify your ID and send it for review
+              </Link>
+            )}
+          </p>
+        ) : (
+          <p className="rounded-2xl bg-surface px-4 py-3 text-[13px] leading-snug text-fg-muted">
+            <span className="text-fg">Preview.</span> This is how visitors see your listing. Saved on this device until you
+            sign in as an advertiser; then every edit is checked by a moderator.
+          </p>
+        )
       }
       actions={
         <>

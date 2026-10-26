@@ -93,7 +93,9 @@ export function ListingEditor() {
   const leave = () => router.push(listing ? "/me" : "/");
   const cancel = () => (dirty ? setConfirmLeave(true) : leave());
 
-  const submit = (e: React.FormEvent) => {
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setShowErrors(true);
     setSaveError(undefined);
@@ -102,11 +104,14 @@ export function ListingEditor() {
       document.getElementById(first?.[1] ?? "details")?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
+    setSaving(true);
     try {
-      save({ ...candidate, display_name: candidate.display_name.trim(), area: candidate.area.trim(), bio: candidate.bio.trim() });
+      await save({ ...candidate, display_name: candidate.display_name.trim(), area: candidate.area.trim(), bio: candidate.bio.trim() });
     } catch (err) {
       setSaveError((err as Error).message);
       return;
+    } finally {
+      setSaving(false);
     }
     toast(listing ? "Listing saved" : "Listing created");
     router.push("/me");
@@ -119,8 +124,8 @@ export function ListingEditor() {
           <X className="size-5" />
         </button>
         <h1 className="text-[17px] font-medium">{listing ? "Edit listing" : "Create listing"}</h1>
-        <button type="submit" className="h-12 rounded-full bg-accent px-5 text-[15px] font-medium text-accent-fg">
-          Save
+        <button type="submit" disabled={saving} className="h-12 rounded-full bg-accent px-5 text-[15px] font-medium text-accent-fg disabled:opacity-60">
+          {saving ? "Saving…" : "Save"}
         </button>
       </header>
 
@@ -250,15 +255,21 @@ export function ListingEditor() {
       </Sheet>
 
       <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete your listing?">
-        <p className="text-[15px] text-fg-muted">Your details and photos are removed from this device. This can&apos;t be undone.</p>
+        <p className="text-[15px] text-fg-muted">Your details and photos are deleted. This can&apos;t be undone.</p>
         <div className="mt-5 flex gap-2">
           <button type="button" onClick={() => setConfirmDelete(false)} className="h-14 flex-1 rounded-full bg-surface-2 text-[16px]">
             Keep it
           </button>
           <button
             type="button"
-            onClick={() => {
-              remove();
+            onClick={async () => {
+              try {
+                await remove();
+              } catch (err) {
+                setConfirmDelete(false);
+                setSaveError((err as Error).message);
+                return;
+              }
               toast("Listing deleted");
               router.push("/me");
             }}
