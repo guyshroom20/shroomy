@@ -5,7 +5,8 @@ import { Field, FormError, SubmitButton } from "@/components/auth/AuthForm";
 import type { Tables } from "@/lib/supabase/database.types";
 import { saveListing, type ListingFormState } from "@/app/advertise/actions";
 
-export function ListingForm({ listing }: { listing: Tables<"listings"> | null }) {
+/** verifiedAge: from the ID check. When set, the age field is fixed to it. */
+export function ListingForm({ listing, verifiedAge }: { listing: Tables<"listings"> | null; verifiedAge?: number }) {
   const [state, action, pending] = useActionState<ListingFormState, FormData>(saveListing, {});
   const tags = ((listing?.tags as { label: string }[] | null) ?? []).map((t) => t.label).join(", ");
   return (
@@ -13,7 +14,7 @@ export function ListingForm({ listing }: { listing: Tables<"listings"> | null })
       <Field label="Display name" name="display_name" defaultValue={listing?.display_name} maxLength={40} required />
       <Field label="Profile link (shroom.uk/profile/…)" name="slug" defaultValue={listing?.slug} pattern="[a-z0-9][a-z0-9-]{2,39}" required />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Age" name="age" type="number" min={18} max={99} defaultValue={listing?.age} required />
+        <Field label="Age" name="age" type="number" min={18} max={99} defaultValue={verifiedAge ?? listing?.age} readOnly={verifiedAge !== undefined} required />
         <label className="block">
           <span className="text-[13px] text-fg-muted">Availability</span>
           <select

@@ -11,6 +11,35 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_signals: {
+        Row: {
+          account_id: string
+          first_seen: string
+          kind: Database["public"]["Enums"]["signal_kind"]
+          value_hash: string
+        }
+        ComputedFields: never
+        Insert: {
+          account_id: string
+          first_seen?: string
+          kind: Database["public"]["Enums"]["signal_kind"]
+          value_hash: string
+        }
+        Update: {
+          account_id?: string
+          first_seen?: string
+          kind?: Database["public"]["Enums"]["signal_kind"]
+          value_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_signals_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           age_assurance: Database["public"]["Enums"]["verification_status"]
@@ -86,6 +115,66 @@ export type Database = {
             columns: ["blocker_id"]
             referencedRelation: "accounts"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      consent_statements: {
+        Row: {
+          key: string
+          position: number
+          version: number
+          wording: string
+        }
+        ComputedFields: never
+        Insert: {
+          key: string
+          position: number
+          version: number
+          wording: string
+        }
+        Update: {
+          key?: string
+          position?: number
+          version?: number
+          wording?: string
+        }
+        Relationships: []
+      }
+      consents: {
+        Row: {
+          accepted_at: string
+          account_id: string
+          id: number
+          statement_key: string
+          statement_version: number
+        }
+        ComputedFields: never
+        Insert: {
+          accepted_at?: string
+          account_id: string
+          id?: never
+          statement_key: string
+          statement_version: number
+        }
+        Update: {
+          accepted_at?: string
+          account_id?: string
+          id?: never
+          statement_key?: string
+          statement_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consents_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consents_statement_key_statement_version_fkey"
+            columns: ["statement_key", "statement_version"]
+            referencedRelation: "consent_statements"
+            referencedColumns: ["key", "version"]
           },
         ]
       }
@@ -470,6 +559,103 @@ export type Database = {
           },
         ]
       }
+      risk_flags: {
+        Row: {
+          account_id: string
+          created_at: string
+          detail: string
+          handled_at: string | null
+          handled_by: string | null
+          id: number
+          kind: Database["public"]["Enums"]["risk_flag_kind"]
+          related_account_id: string | null
+          resolution_note: string | null
+          severity: Database["public"]["Enums"]["risk_severity"]
+          status: Database["public"]["Enums"]["risk_flag_status"]
+        }
+        ComputedFields: never
+        Insert: {
+          account_id: string
+          created_at?: string
+          detail: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: never
+          kind: Database["public"]["Enums"]["risk_flag_kind"]
+          related_account_id?: string | null
+          resolution_note?: string | null
+          severity: Database["public"]["Enums"]["risk_severity"]
+          status?: Database["public"]["Enums"]["risk_flag_status"]
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          detail?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: never
+          kind?: Database["public"]["Enums"]["risk_flag_kind"]
+          related_account_id?: string | null
+          resolution_note?: string | null
+          severity?: Database["public"]["Enums"]["risk_severity"]
+          status?: Database["public"]["Enums"]["risk_flag_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_flags_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_flags_handled_by_fkey"
+            columns: ["handled_by"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_flags_related_account_id_fkey"
+            columns: ["related_account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      safety_checkins: {
+        Row: {
+          account_id: string
+          created_at: string
+          free_to_stop: string
+          id: number
+          others_involved: string
+          wants_contact: boolean
+        }
+        ComputedFields: never
+        Insert: {
+          account_id: string
+          created_at?: string
+          free_to_stop: string
+          id?: never
+          others_involved: string
+          wants_contact?: boolean
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          free_to_stop?: string
+          id?: never
+          others_involved?: string
+          wants_contact?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_checkins_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shortlist: {
         Row: {
           account_id: string
@@ -569,6 +755,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      give_consents: { Args: { p_keys: string[] }; Returns: undefined }
       mark_conversation_read: {
         Args: { p_conversation_id: string }
         Returns: undefined
@@ -589,11 +776,46 @@ export type Database = {
           unread_count: number
         }[]
       }
+      my_onboarding: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          checkin_done: boolean
+          consent_version: number
+          consents_done: boolean
+          phone_done: boolean
+        }[]
+      }
+      raise_risk_flag: {
+        Args: {
+          p_account_id: string
+          p_detail: string
+          p_kind: Database["public"]["Enums"]["risk_flag_kind"]
+          p_related_account_id?: string
+          p_severity: Database["public"]["Enums"]["risk_severity"]
+        }
+        Returns: undefined
+      }
+      record_account_signal: {
+        Args: {
+          p_account_id: string
+          p_hash: string
+          p_kind: Database["public"]["Enums"]["signal_kind"]
+        }
+        Returns: undefined
+      }
       resolve_report: {
         Args: {
           p_note?: string
           p_report_id: number
           p_status: Database["public"]["Enums"]["report_status"]
+        }
+        Returns: undefined
+      }
+      resolve_risk_flag: {
+        Args: {
+          p_flag_id: number
+          p_note?: string
+          p_status: Database["public"]["Enums"]["risk_flag_status"]
         }
         Returns: undefined
       }
@@ -624,6 +846,14 @@ export type Database = {
         }
         Returns: number
       }
+      submit_safety_checkin: {
+        Args: {
+          p_free_to_stop: string
+          p_others_involved: string
+          p_wants_contact: boolean
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       account_role: "visitor" | "advertiser" | "moderator" | "admin"
@@ -645,6 +875,16 @@ export type Database = {
         | "spam"
         | "other"
       report_status: "open" | "actioned" | "dismissed"
+      risk_flag_kind:
+        | "shared_phone"
+        | "shared_device"
+        | "shared_payment_card"
+        | "repeated_id_failures"
+        | "safety_checkin"
+        | "profile_wording"
+      risk_flag_status: "open" | "cleared" | "actioned"
+      risk_severity: "review" | "urgent"
+      signal_kind: "phone" | "device" | "payment_card"
       verification_status: "none" | "pending" | "passed" | "failed"
     }
     CompositeTypes: {
@@ -794,6 +1034,17 @@ export const Constants = {
         "other",
       ],
       report_status: ["open", "actioned", "dismissed"],
+      risk_flag_kind: [
+        "shared_phone",
+        "shared_device",
+        "shared_payment_card",
+        "repeated_id_failures",
+        "safety_checkin",
+        "profile_wording",
+      ],
+      risk_flag_status: ["open", "cleared", "actioned"],
+      risk_severity: ["review", "urgent"],
+      signal_kind: ["phone", "device", "payment_card"],
       verification_status: ["none", "pending", "passed", "failed"],
     },
   },

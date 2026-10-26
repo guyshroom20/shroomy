@@ -92,6 +92,13 @@ select tests.anon();
 select tests.ok(tests.count('select * from public.listings') = 0, 'drafts are hidden from the public');
 
 select tests.login('adv@test');
+select tests.throws('select public.submit_listing_for_review()', 'cannot submit before agreeing to the statements');
+select tests.throws($$select public.give_consents(array['adult'])$$, 'a partial set of consents is refused');
+select public.give_consents(array(select key from public.consent_statements where version = 1));
+select tests.ok((select consents_done and not checkin_done from public.my_onboarding()), 'consents recorded, check-in still to do');
+select tests.throws('select public.submit_listing_for_review()', 'cannot submit before the safety check-in');
+select public.submit_safety_checkin('no', 'yes', false);
+select tests.ok(tests.count('select * from public.safety_checkins') = 0, 'advertisers cannot read check-in answers back');
 select tests.throws('select public.submit_listing_for_review()', 'cannot submit without photos');
 
 create temp table l as select id from public.listings where slug = 'helen';
@@ -242,6 +249,78 @@ select tests.ok((select id_verification = 'failed' from public.accounts where id
 select tests.ok((select status = 'suspended' from public.listings where slug = 'kid'), 'under-18 listing is suspended');
 select tests.ok(exists (select 1 from public.reports where urgent and reported_account_id = (select adv2 from ids)),
   'under-18 result raises an urgent report');
+
+-- Onboarding risk flags ------------------------------------------------------
+
+select tests.login('vis@test');
+select tests.throws($$select public.give_consents(array(select key from public.consent_statements))$$,
+  'visitors cannot give advertiser consents');
+
+reset role;
+insert into auth.users (email, raw_user_meta_data) values
+  ('adv3@test', '{"role": "advertiser"}'),
+  ('adv4@test', '{"role": "advertiser"}'),
+  ('adv5@test', '{"role": "advertiser"}');
+create temp table more_ids as
+select
+  (select id from auth.users where email = 'adv3@test') as adv3,
+  (select id from auth.users where email = 'adv4@test') as adv4,
+  (select id from auth.users where email = 'adv5@test') as adv5;
+grant select on more_ids to anon, authenticated, service_role;
+
+set local role service_role;
+select public.record_account_signal((select adv3 from more_ids), 'phone', repeat('a', 64));
+select public.record_account_signal((select adv4 from more_ids), 'phone', repeat('a', 64));
+select public.record_account_signal((select vis from ids), 'phone', repeat('a', 64));
+reset role;
+select tests.ok((select count(*) from public.risk_flags where kind = 'shared_phone' and severity = 'review') = 2,
+  'two advertisers sharing a phone are both flagged, visitors are ignored');
+
+set local role service_role;
+select public.record_account_signal((select adv5 from more_ids), 'phone', repeat('a', 64));
+reset role;
+select tests.ok((select count(*) from public.risk_flags where kind = 'shared_phone' and severity = 'urgent') = 4,
+  'a third account on the same phone is urgent');
+select tests.ok(exists (select 1 from public.reports where urgent and reported_account_id = (select adv5 from more_ids)),
+  'urgent flags go into the urgent reports queue');
+
+select tests.login('adv3@test');
+select public.submit_safety_checkin('yes', 'yes', false);
+reset role;
+select tests.ok(exists (
+  select 1 from public.risk_flags
+  where account_id = (select adv3 from more_ids) and kind = 'safety_checkin' and severity = 'urgent'
+), 'saying someone else is involved raises an urgent flag');
+
+select tests.login('adv4@test');
+insert into public.listings (slug, display_name, age, area, bio) values ('ana', 'Ana', 24, 'Leeds', 'Ask our booker. New girls every week');
+reset role;
+select tests.ok((select detail from public.risk_flags where account_id = (select adv4 from more_ids) and kind = 'profile_wording')
+  like '%booker%', 'profile wording that suggests a third party is flagged');
+
+set local role service_role;
+select public.complete_verification_check(
+  public.begin_verification_check((select adv5 from more_ids), 'id_verification', 'stub'), false, null, null, 'face_mismatch')
+from generate_series(1, 3);
+reset role;
+select tests.ok(exists (
+  select 1 from public.risk_flags where account_id = (select adv5 from more_ids) and kind = 'repeated_id_failures'
+), 'three failed ID checks raise a flag');
+
+select tests.login('adv3@test');
+select tests.ok(tests.count('select * from public.risk_flags') = 0, 'advertisers never see flags, even their own');
+select tests.throws('select * from public.account_signals', 'advertisers cannot read signals');
+select tests.throws($$select public.raise_risk_flag((select adv3 from more_ids), 'shared_phone', 'review', 'x')$$,
+  'users cannot raise flags');
+select tests.throws($$select public.record_account_signal((select adv3 from more_ids), 'phone', repeat('b', 64))$$,
+  'users cannot record signals');
+select tests.throws($$select public.resolve_risk_flag(1, 'cleared')$$, 'advertisers cannot clear flags');
+
+select tests.login('mod@test');
+select tests.ok(tests.count('select * from public.risk_flags') = 9, 'moderators see every flag');
+select tests.ok(tests.count('select * from public.safety_checkins') = 2, 'moderators read check-in answers');
+select public.resolve_risk_flag((select id from public.risk_flags where kind = 'profile_wording'), 'cleared', 'Checked, fine');
+select tests.ok((select status from public.risk_flags where kind = 'profile_wording') = 'cleared', 'moderators can clear a flag');
 
 -- Bans -----------------------------------------------------------------------
 

@@ -52,3 +52,13 @@ export async function banAccount(form: FormData) {
   });
   await done(error);
 }
+
+export async function resolveRiskFlag(form: FormData) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("resolve_risk_flag", {
+    p_flag_id: Number(form.get("id")),
+    p_status: form.get("decision") === "actioned" ? "actioned" : ("cleared" as Enums<"risk_flag_status">),
+    p_note: String(form.get("note") ?? "") || undefined,
+  });
+  await done(error);
+}

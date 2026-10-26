@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { formatRelative } from "@/lib/format";
 import { PHOTO_BUCKET } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
-import { banAccount, resolveReport, reviewListing, reviewPhoto } from "./actions";
+import { banAccount, resolveReport, resolveRiskFlag, reviewListing, reviewPhoto } from "./actions";
 
 export const metadata = { title: "Moderation · shroom" };
 // Per-user page: never prerender.
@@ -19,6 +19,22 @@ const reasonLabel: Record<string, string> = {
   harassment: "Harassment",
   spam: "Spam",
   other: "Other",
+};
+
+const flagLabel: Record<string, string> = {
+  shared_phone: "Phone shared with another advertiser",
+  shared_device: "Device shared with another advertiser",
+  shared_payment_card: "Card shared with another advertiser",
+  repeated_id_failures: "Repeated failed ID checks",
+  safety_checkin: "Safety check-in answer",
+  profile_wording: "Profile wording suggests a third party",
+};
+
+const answerLabel: Record<string, string> = {
+  no: "no",
+  yes: "yes",
+  prefer_not_to_say: "rather not say",
+  not_sure: "not sure",
 };
 
 function Queue({ title, count, children }: { title: string; count: number; children: ReactNode }) {
@@ -73,6 +89,33 @@ export default async function ModerationPage() {
       .limit(50),
   ]);
 
+  // Onboarding facts for the advertisers in the queues: open flags, the
+  // safety check-in, and whether they agreed to the current statements.
+  const { data: flags } = await supabase
+    .from("risk_flags")
+    .select("*")
+    .eq("status", "open")
+    .order("severity", { ascending: false })
+    .order("created_at")
+    .limit(100);
+  const advertiserIds = [...new Set([...(listings ?? []).map((l) => l.advertiser_id), ...(flags ?? []).map((f) => f.account_id)])];
+  const [{ data: flagListings }, { data: checkins }, { data: statements }, { data: consents }] = advertiserIds.length
+    ? await Promise.all([
+        supabase.from("listings").select("advertiser_id, display_name, slug").in("advertiser_id", advertiserIds),
+        supabase.from("safety_checkins").select("*").in("account_id", advertiserIds).order("created_at", { ascending: false }),
+        supabase.from("consent_statements").select("key, version"),
+        supabase.from("consents").select("account_id, statement_key, statement_version").in("account_id", advertiserIds),
+      ])
+    : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }];
+  const nameOf = new Map((flagListings ?? []).map((l) => [l.advertiser_id, `${l.display_name} (/${l.slug})`]));
+  const checkinOf = new Map<string, NonNullable<typeof checkins>[number]>();
+  for (const c of checkins ?? []) if (!checkinOf.has(c.account_id)) checkinOf.set(c.account_id, c);
+  const version = Math.max(0, ...(statements ?? []).map((s) => s.version));
+  const needed = (statements ?? []).filter((s) => s.version === version).length;
+  const consentsDone = (id: string) =>
+    needed > 0 && (consents ?? []).filter((c) => c.account_id === id && c.statement_version === version).length === needed;
+  const openFlags = (id: string) => (flags ?? []).filter((f) => f.account_id === id).length;
+
   const { data: signed } = photos?.length
     ? await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(photos.map((p) => p.storage_path), 600)
     : { data: [] };
@@ -101,6 +144,23 @@ export default async function ModerationPage() {
                 <button className="w-full rounded-full py-2 text-[13px] text-like ring-1 ring-like/40">Ban this account</button>
               </form>
             )}
+          </article>
+        ))}
+      </Queue>
+
+      <Queue title="Risk flags" count={flags?.length ?? 0}>
+        {flags?.map((f) => (
+          <article key={f.id} className={cn("rounded-3xl bg-surface p-4", f.severity === "urgent" && "ring-2 ring-like")}>
+            <div className="flex items-center justify-between text-[13px] text-fg-muted">
+              <span className={cn(f.severity === "urgent" && "font-medium text-like")}>{flagLabel[f.kind]}</span>
+              <span>{formatRelative(f.created_at)}</span>
+            </div>
+            <p className="mt-2 text-[15px]">{nameOf.get(f.account_id) ?? "Advertiser with no profile yet"}</p>
+            <p className="mt-1 text-[14px] text-fg-muted">{f.detail}</p>
+            {f.related_account_id && (
+              <p className="mt-1 text-[14px] text-fg-muted">Shared with: {nameOf.get(f.related_account_id) ?? "an account with no profile yet"}</p>
+            )}
+            <Decide action={resolveRiskFlag} id={f.id} approve={["actioned", "Actioned"]} reject={["cleared", "Clear"]} withNote />
           </article>
         ))}
       </Queue>
@@ -134,6 +194,13 @@ export default async function ModerationPage() {
             </div>
             <p className="text-[14px] text-fg-muted">
               {l.area} · ID {l.accounts?.id_verification ?? "none"} · {l.approved_photo_count} approved photos
+            </p>
+            <p className="text-[14px] text-fg-muted">
+              Statements {consentsDone(l.advertiser_id) ? "agreed" : "not agreed"} ·{" "}
+              {checkinOf.get(l.advertiser_id)
+                ? `check-in: others involved ${answerLabel[checkinOf.get(l.advertiser_id)!.others_involved]}, free to stop ${answerLabel[checkinOf.get(l.advertiser_id)!.free_to_stop]}`
+                : "no check-in"}
+              {openFlags(l.advertiser_id) > 0 && <span className="text-like"> · {openFlags(l.advertiser_id)} open flags</span>}
             </p>
             {l.bio && <p className="mt-2 text-[14px]">{l.bio}</p>}
             <Decide action={reviewListing} id={l.id} approve={["approve", "Approve"]} reject={["reject", l.status === "published" ? "Suspend" : "Reject"]} withNote />

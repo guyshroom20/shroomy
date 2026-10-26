@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAccount } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { providerFor } from "@/lib/verification/providers";
+import { RETURN_COOKIE } from "@/lib/verification/return";
 import type { CheckKind } from "@/lib/verification/types";
 
 // Starts an ID check (advertisers) or age check (visitors) and sends the
@@ -41,5 +42,7 @@ export async function POST(request: NextRequest) {
   if (session.providerRef) {
     await admin.from("verification_checks").update({ provider_ref: session.providerRef }).eq("id", checkId);
   }
-  return NextResponse.redirect(new URL(session.redirectUrl, origin), 303);
+  const res = NextResponse.redirect(new URL(session.redirectUrl, origin), 303);
+  res.cookies.set(RETURN_COOKIE, returnPath, { httpOnly: true, sameSite: "lax", secure: origin.startsWith("https"), maxAge: 3600, path: "/" });
+  return res;
 }

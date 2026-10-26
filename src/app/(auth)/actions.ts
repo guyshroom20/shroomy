@@ -35,7 +35,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
     password,
     options: {
       data: { role, display_name: String(form.get("display_name") ?? "").trim() },
-      emailRedirectTo: `${origin}/auth/confirm?next=${role === "advertiser" ? "/advertise" : "/"}`,
+      emailRedirectTo: `${origin}/auth/confirm?next=${role === "advertiser" ? "/onboarding" : "/"}`,
     },
   });
   if (error) return { error: error.message };

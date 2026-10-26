@@ -26,6 +26,16 @@ export interface VerificationProvider {
     /** Where the provider posts the result. */
     webhookUrl: string;
   }): Promise<{ redirectUrl: string; providerRef?: string }>;
-  /** Checks the webhook's signature and reads the result. Returns null when the request isn't genuine. */
-  parseWebhook(request: Request): Promise<VerificationResult | null>;
+  /**
+   * Checks the webhook is genuine and reads the result. Returns null when the
+   * request isn't genuine, and "ignore" for a genuine update that isn't a final result.
+   */
+  parseWebhook(request: Request): Promise<VerificationResult | "ignore" | null>;
+  /**
+   * Asks the provider for the result directly, for when the user comes back
+   * before (or without) the webhook. Null while the check is still running.
+   */
+  fetchResult?(providerRef: string): Promise<VerificationResult | null>;
+  /** Deletes what the provider holds (documents, selfies) once the result is stored. */
+  cleanup?(providerRef: string): Promise<void>;
 }

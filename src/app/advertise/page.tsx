@@ -1,4 +1,5 @@
-import { BadgeCheck, Clock } from "lucide-react";
+import { BadgeCheck, ChevronRight, Clock } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { ListingForm } from "@/components/advertise/ListingForm";
 import { PhotoManager } from "@/components/advertise/PhotoManager";
@@ -51,6 +52,8 @@ export default async function AdvertisePage() {
   const urls = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
 
   const verified = account.id_verification === "passed";
+  const { data: progress } = await supabase.rpc("my_onboarding");
+  const onboarded = Boolean(progress?.[0]?.consents_done && progress[0].phone_done && progress[0].checkin_done);
 
   return (
     <main className="px-5 pt-8 pb-32">
@@ -61,6 +64,13 @@ export default async function AdvertisePage() {
           {listing.needs_review && " Your latest edits are being checked."}
           {listing.moderation_note && ` Note from moderators: ${listing.moderation_note}`}
         </p>
+      )}
+
+      {!onboarded && (
+        <Link href="/onboarding" className="mt-6 flex items-center gap-3 rounded-3xl bg-accent p-4 text-accent-fg">
+          <span className="flex-1 text-[15px] font-medium">Finish setting up: rules, ID, safety check-in</span>
+          <ChevronRight className="size-5" />
+        </Link>
       )}
 
       <Section title="1. Verify your ID">

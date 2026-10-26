@@ -56,6 +56,7 @@ export async function saveListing(_: ListingFormState, form: FormData): Promise<
     return { error: "Couldn't save your profile." };
   }
   revalidatePath("/advertise");
+  revalidatePath("/onboarding");
   return { saved: true };
 }
 
