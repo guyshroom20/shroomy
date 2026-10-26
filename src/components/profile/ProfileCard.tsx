@@ -1,16 +1,24 @@
+"use client";
+
 import { Bookmark, ChevronDown, EllipsisVertical } from "lucide-react";
 import Link from "next/link";
 import type { Profile } from "@/lib/types";
+import { useSaved } from "@/lib/saved";
+import { useToast } from "@/lib/toast";
 import { IconButton } from "@/components/ui/IconButton";
 import { PhotoFill } from "@/components/ui/PhotoFill";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
 import { cn } from "@/lib/cn";
+import { ProfileMenu } from "./ProfileMenu";
 
-type Props = { profile: Profile; className?: string; interactive?: boolean };
+type Props = { profile: Profile; className?: string; interactive?: boolean; onHide?: () => void };
 
 /** The large photo card used in the For You stack. */
-export function ProfileCard({ profile, className, interactive = true }: Props) {
+export function ProfileCard({ profile, className, interactive = true, onHide }: Props) {
+  const { isSaved, toggle } = useSaved();
+  const toast = useToast();
+  const saved = isSaved(profile.id);
   return (
     <article className={cn("relative h-full w-full overflow-hidden rounded-[var(--radius-card)] bg-surface-2", className)}>
       <PhotoFill photo={profile.photos[0]} priority />
@@ -18,11 +26,24 @@ export function ProfileCard({ profile, className, interactive = true }: Props) {
 
       {interactive && (
         <div className="absolute inset-x-3 top-3 flex justify-between">
-          <IconButton label="More options" variant="glass" size="sm">
-            <EllipsisVertical className="size-5" />
-          </IconButton>
-          <IconButton label="Bookmark" variant="glass" size="sm">
-            <Bookmark className="size-4" />
+          <ProfileMenu profile={profile} onHide={onHide}>
+            {(toggleMenu, open) => (
+              <IconButton label="More options" variant="glass" size="sm" onClick={toggleMenu} aria-expanded={open}>
+                <EllipsisVertical className="size-5" />
+              </IconButton>
+            )}
+          </ProfileMenu>
+          <IconButton
+            label={saved ? "Remove bookmark" : "Bookmark"}
+            variant="glass"
+            size="sm"
+            aria-pressed={saved}
+            onClick={() => {
+              toggle(profile.id);
+              toast(saved ? `Removed ${profile.displayName} from saved` : `Saved ${profile.displayName}`);
+            }}
+          >
+            <Bookmark className={cn("size-4", saved && "text-accent")} fill={saved ? "currentColor" : "none"} />
           </IconButton>
         </div>
       )}

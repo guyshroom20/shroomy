@@ -39,6 +39,8 @@ export type Message = {
   id: string;
   fromMe: boolean;
   text: string;
+  /** Attached photo URL (local object URL until uploads exist). */
+  image?: string;
   sentAt: string;
   status?: "sent" | "delivered" | "read";
 };

@@ -4,7 +4,12 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 
 // Client-side shortlist. Swap for an API-backed store once accounts exist.
 
-type SavedCtx = { saved: Set<string>; toggle: (id: string) => void; isSaved: (id: string) => boolean };
+type SavedCtx = {
+  saved: Set<string>;
+  toggle: (id: string) => void;
+  isSaved: (id: string) => boolean;
+  clear: () => void;
+};
 
 const Ctx = createContext<SavedCtx | null>(null);
 const KEY = "saved-profiles";
@@ -31,9 +36,16 @@ export function SavedProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const clear = useCallback(() => {
+    setSaved(new Set());
+    try {
+      localStorage.removeItem(KEY);
+    } catch {}
+  }, []);
+
   const isSaved = useCallback((id: string) => saved.has(id), [saved]);
 
-  return <Ctx.Provider value={{ saved, toggle, isSaved }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ saved, toggle, isSaved, clear }}>{children}</Ctx.Provider>;
 }
 
 export function useSaved() {

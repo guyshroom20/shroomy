@@ -4,6 +4,8 @@ import { LocateFixed } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import type { Profile } from "@/lib/types";
+import { useFilteredProfiles } from "@/lib/filters";
+import { useToast } from "@/lib/toast";
 import { PhotoFill } from "@/components/ui/PhotoFill";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
@@ -14,8 +16,19 @@ import { MapBackdrop } from "./MapBackdrop";
  * Map of nearby profiles. Positions are approximate (area level, fuzzed
  * server side) so an advertiser's real location is never exposed.
  */
-export function NearbyMap({ profiles }: { profiles: Profile[] }) {
-  const [selectedId, setSelectedId] = useState(profiles[0]?.id);
+export function NearbyMap({ profiles: all }: { profiles: Profile[] }) {
+  const profiles = useFilteredProfiles(all);
+  const [pickedId, setPickedId] = useState<string>();
+  const toast = useToast();
+  // Fall back to the first visible pin when the picked one is filtered out.
+  const selectedId = profiles.some((p) => p.id === pickedId) ? pickedId : profiles[0]?.id;
+
+  const recentre = () => {
+    const nearest = [...profiles].sort((a, b) => a.distanceMiles - b.distanceMiles)[0];
+    if (!nearest) return toast("No one nearby matches your filters");
+    setPickedId(nearest.id);
+    toast(`Nearest: ${nearest.displayName}, ${nearest.distanceMiles} mi`);
+  };
 
   return (
     <div className="absolute inset-0">
@@ -45,7 +58,7 @@ export function NearbyMap({ profiles }: { profiles: Profile[] }) {
             ) : (
               <button
                 type="button"
-                onClick={() => setSelectedId(p.id)}
+                onClick={() => setPickedId(p.id)}
                 aria-label={`${p.displayName}, ${p.distanceMiles} miles away`}
                 className="relative block size-20 overflow-hidden rounded-full border-4 border-surface-3 shadow-xl transition active:scale-95"
               >
@@ -56,7 +69,7 @@ export function NearbyMap({ profiles }: { profiles: Profile[] }) {
         );
       })}
 
-      <button type="button" aria-label="Recentre map" className="glass absolute bottom-28 right-4 z-20 flex size-14 items-center justify-center rounded-full">
+      <button type="button" aria-label="Recentre map" onClick={recentre} className="glass absolute bottom-28 right-4 z-20 flex size-14 items-center justify-center rounded-full">
         <LocateFixed className="size-6" />
       </button>
     </div>

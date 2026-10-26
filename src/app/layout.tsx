@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/inter";
 import "./globals.css";
+import { FiltersProvider } from "@/lib/filters";
 import { SavedProvider } from "@/lib/saved";
+import { ToastProvider } from "@/lib/toast";
 
 export const metadata: Metadata = {
   title: "shroom",
@@ -23,7 +25,11 @@ export default function RootLayout({
       <body className="antialiased">
         {/* Phone-width column; on desktop it sits centred like a device. */}
         <div className="relative mx-auto flex min-h-dvh w-full max-w-[440px] flex-col overflow-hidden bg-bg">
-          <SavedProvider>{children}</SavedProvider>
+          <ToastProvider>
+            <FiltersProvider>
+              <SavedProvider>{children}</SavedProvider>
+            </FiltersProvider>
+          </ToastProvider>
         </div>
       </body>
     </html>

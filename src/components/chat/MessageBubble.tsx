@@ -10,18 +10,24 @@ export function MessageBubble({ message, first, last }: Props) {
   const mine = message.fromMe;
   return (
     <div className={cn("flex flex-col", mine ? "items-end" : "items-start", first ? "mt-3" : "mt-1")}>
-      <p
-        className={cn(
-          "max-w-[78%] rounded-[22px] px-4 py-2.5 text-[15px] leading-snug",
-          mine ? "bg-accent text-accent-fg" : "bg-surface-2 text-fg",
-          mine && !last && "rounded-br-md",
-          mine && !first && "rounded-tr-md",
-          !mine && !last && "rounded-bl-md",
-          !mine && !first && "rounded-tl-md",
-        )}
-      >
-        {message.text}
-      </p>
+      {message.image && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={message.image} alt="Sent photo" className="mb-1 max-h-72 max-w-[70%] rounded-[22px] object-cover" />
+      )}
+      {message.text && (
+        <p
+          className={cn(
+            "max-w-[78%] rounded-[22px] px-4 py-2.5 text-[15px] leading-snug",
+            mine ? "bg-accent text-accent-fg" : "bg-surface-2 text-fg",
+            mine && !last && "rounded-br-md",
+            mine && !first && "rounded-tr-md",
+            !mine && !last && "rounded-bl-md",
+            !mine && !first && "rounded-tl-md",
+          )}
+        >
+          {message.text}
+        </p>
+      )}
       {last && (
         <span className="mt-1 flex items-center gap-1 px-2 text-[11px] text-fg-subtle">
           {formatTime(message.sentAt)}

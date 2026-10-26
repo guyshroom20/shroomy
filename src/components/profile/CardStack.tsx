@@ -1,27 +1,58 @@
 "use client";
 
-import { Heart, X } from "lucide-react";
+import { Heart, SearchX, X } from "lucide-react";
 import { useRef, useState } from "react";
 import type { Profile } from "@/lib/types";
+import { useFilteredProfiles, useFilters } from "@/lib/filters";
 import { useSaved } from "@/lib/saved";
+import { useToast } from "@/lib/toast";
 import { IconButton } from "@/components/ui/IconButton";
 import { ProfileCard } from "./ProfileCard";
 
 const SWIPE_THRESHOLD = 110;
 
 /** Swipeable stack: drag right or tap the heart to save, left or the cross to skip. */
-export function CardStack({ profiles }: { profiles: Profile[] }) {
+export function CardStack({ profiles: all }: { profiles: Profile[] }) {
   const [index, setIndex] = useState(0);
   const [drag, setDrag] = useState({ x: 0, active: false });
   const [leaving, setLeaving] = useState<0 | 1 | -1>(0);
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
   const start = useRef(0);
   const { toggle, isSaved } = useSaved();
+  const { reset } = useFilters();
+  const toast = useToast();
+  const profiles = useFilteredProfiles(all).filter((p) => !hidden.has(p.id));
+
+  if (profiles.length === 0) {
+    return (
+      <div className="mx-5 mt-10 flex flex-col items-center rounded-[28px] bg-surface px-6 py-12 text-center">
+        <span className="flex size-16 items-center justify-center rounded-full bg-surface-2">
+          <SearchX className="size-7 text-fg-muted" />
+        </span>
+        <p className="mt-4 text-[17px]">No one matches right now</p>
+        <p className="mt-1 text-[14px] text-fg-muted">Try widening your filters.</p>
+        <button
+          type="button"
+          onClick={() => {
+            reset();
+            setHidden(new Set());
+          }}
+          className="mt-6 rounded-full bg-fg px-5 py-3 text-[15px] font-medium text-bg"
+        >
+          Reset filters
+        </button>
+      </div>
+    );
+  }
 
   const current = profiles[index % profiles.length];
   const next = profiles[(index + 1) % profiles.length];
 
   const decide = (dir: 1 | -1) => {
-    if (dir === 1 && !isSaved(current.id)) toggle(current.id);
+    if (dir === 1 && !isSaved(current.id)) {
+      toggle(current.id);
+      toast(`Saved ${current.displayName}`);
+    }
     setLeaving(dir);
     setTimeout(() => {
       setLeaving(0);
@@ -69,7 +100,11 @@ export function CardStack({ profiles }: { profiles: Profile[] }) {
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
           >
-            <ProfileCard key={current.id} profile={current} />
+            <ProfileCard
+              key={current.id}
+              profile={current}
+              onHide={() => setHidden((h) => new Set(h).add(current.id))}
+            />
           </div>
 
           <div className="mt-2 flex justify-center">

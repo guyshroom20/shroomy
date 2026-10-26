@@ -1,7 +1,8 @@
 import type { Conversation, FilterChip, Profile } from "./types";
 
-// Placeholder data until the API exists. Photos use gradient tints because
-// real advertiser images will come from verified uploads.
+// Placeholder data until the API exists. Photos are mood/lifestyle stock shots
+// (Unsplash licence, via picsum.photos) in public/photos, standing in for
+// verified advertiser uploads. The tint still shows while an image loads.
 
 const tints: [string, string][] = [
   ["#f59e0b", "#7c2d12"],
@@ -14,8 +15,9 @@ const tints: [string, string][] = [
   ["#fb923c", "#431407"],
 ];
 
-const photos = (seed: number, name: string, count = 4) =>
-  Array.from({ length: count }, (_, i) => ({
+const photos = (seed: number, name: string, ids: number[]) =>
+  ids.map((id, i) => ({
+    src: `/photos/${id}.jpg`,
     tint: tints[(seed + i) % tints.length],
     alt: `${name}, photo ${i + 1}`,
   }));
@@ -39,13 +41,13 @@ export const profiles: Profile[] = [
       { emoji: "🧘", label: "Wellness" },
       { emoji: "💬", label: "Talks" },
     ],
-    photos: photos(0, "Helen"),
+    photos: photos(0, "Helen", [249, 237, 274, 1078, 195]),
     lockedCount: 12,
     story: {
       id: "s-helen",
       caption: "It's you that I adore, as we drift into the night",
       nowPlaying: "Cigarettes After Sex – Sunsetz",
-      slides: photos(0, "Helen", 5),
+      slides: photos(0, "Helen", [195, 223, 171, 56, 1026]),
     },
   },
   {
@@ -63,12 +65,12 @@ export const profiles: Profile[] = [
       { emoji: "🎧", label: "Vinyl" },
       { emoji: "🍷", label: "Wine" },
     ],
-    photos: photos(1, "Viktoria"),
+    photos: photos(1, "Viktoria", [39, 75, 1059, 257, 173]),
     lockedCount: 4,
     story: {
       id: "s-viktoria",
       caption: "Golden hour, every hour",
-      slides: photos(1, "Viktoria", 3),
+      slides: photos(1, "Viktoria", [173, 206, 110]),
     },
   },
   {
@@ -85,7 +87,7 @@ export const profiles: Profile[] = [
       { emoji: "🌊", label: "Beach" },
       { emoji: "📚", label: "Reader" },
     ],
-    photos: photos(2, "Angel"),
+    photos: photos(2, "Angel", [13, 24, 1015, 199]),
     lockedCount: 0,
   },
   {
@@ -102,7 +104,7 @@ export const profiles: Profile[] = [
       { emoji: "📷", label: "Film photos" },
       { emoji: "☕", label: "Coffee" },
     ],
-    photos: photos(3, "Eliza"),
+    photos: photos(3, "Eliza", [250, 63, 21, 42, 1067]),
     lockedCount: 8,
   },
   {
@@ -119,7 +121,7 @@ export const profiles: Profile[] = [
       { emoji: "💃", label: "Dancer" },
       { emoji: "✈️", label: "Travel" },
     ],
-    photos: photos(4, "Carmen"),
+    photos: photos(4, "Carmen", [49, 183, 158, 174]),
     lockedCount: 2,
   },
   {
@@ -133,7 +135,7 @@ export const profiles: Profile[] = [
     mapPosition: { x: 0.24, y: 0.78 },
     bio: "Calm energy, sharp humour.",
     tags: [{ emoji: "🎻", label: "Music" }],
-    photos: photos(5, "Valentyna"),
+    photos: photos(5, "Valentyna", [145, 1082, 306, 166]),
     lockedCount: 0,
   },
   {
@@ -147,7 +149,7 @@ export const profiles: Profile[] = [
     mapPosition: { x: 0.92, y: 0.36 },
     bio: "Gallery days, jazz bar nights.",
     tags: [{ emoji: "🎷", label: "Jazz" }],
-    photos: photos(6, "Evelin"),
+    photos: photos(6, "Evelin", [122, 1076, 1081, 192]),
     lockedCount: 6,
   },
 ];
