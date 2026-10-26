@@ -1,8 +1,9 @@
 import { NearbyMap } from "@/components/nearby/NearbyMap";
 import { DiscoverTopBar } from "@/components/ui/TopBar";
-import { profiles } from "@/lib/mock-data";
+import { getProfiles } from "@/lib/data/profiles";
 
-export default function NearbyPage() {
+export default async function NearbyPage() {
+  const profiles = await getProfiles();
   return (
     <main className="relative h-dvh">
       <NearbyMap profiles={profiles.slice(0, 6)} />

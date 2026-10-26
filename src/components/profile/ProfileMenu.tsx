@@ -3,6 +3,7 @@
 import { EyeOff, Flag, Pencil, Share2, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { reportReasonFor, submitReport } from "@/lib/data/chat";
 import type { Profile } from "@/lib/types";
 import { useToast } from "@/lib/toast";
 import { MY_LISTING_ID } from "@/lib/my-listing";
@@ -78,7 +79,12 @@ export function ProfileMenu({ profile, onHide, children }: Props) {
           )}
         </ul>
       )}
-      <ReportSheet open={report} onClose={() => setReport(false)} name={profile.displayName} />
+      <ReportSheet
+        open={report}
+        onClose={() => setReport(false)}
+        name={profile.displayName}
+        onSubmit={profile.listingId ? (r) => submitReport(reportReasonFor(r), { listingId: profile.listingId! }) : undefined}
+      />
     </div>
   );
 }

@@ -109,3 +109,14 @@ export async function submitReport(
   });
   if (error) throw error;
 }
+
+/** Maps the report sheet's options to the database reasons. */
+export const reportReasonFor = (choice: string): ReportReason =>
+  (
+    ({
+      "Fake profile or photos": "not_the_person",
+      "Under 18": "underage",
+      "Scam or asking for money": "scam",
+      Harassment: "harassment",
+    }) as Record<string, ReportReason>
+  )[choice] ?? "other";

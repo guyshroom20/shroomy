@@ -11,7 +11,10 @@ export type Photo = {
 export type Tag = { emoji: string; label: string };
 
 export type Profile = {
+  /** URL slug. */
   id: string;
+  /** Database id, present once profiles come from the backend. */
+  listingId?: string;
   displayName: string;
   age: number;
   verified: boolean;

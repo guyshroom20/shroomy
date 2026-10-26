@@ -31,7 +31,7 @@ export function StoryViewer({ story, profile, replyHref }: Props) {
   const send = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reply.trim()) return;
-    router.push(`${replyHref}?draft=${encodeURIComponent(reply)}`);
+    router.push(`${replyHref}${replyHref.includes("?") ? "&" : "?"}draft=${encodeURIComponent(reply)}`);
   };
 
   return (

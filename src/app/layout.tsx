@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource-variable/inter";
 import "./globals.css";
+import { getAccount } from "@/lib/auth";
+import { getProfiles } from "@/lib/data/profiles";
 import { FiltersProvider } from "@/lib/filters";
-import { profiles } from "@/lib/mock-data";
 import { MyListingProvider } from "@/lib/my-listing";
 import { ProfilesProvider } from "@/lib/profiles";
 import { SavedProvider } from "@/lib/saved";
@@ -20,9 +21,10 @@ export const viewport: Viewport = {
   themeColor: "#121212",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const [profiles, account] = await Promise.all([getProfiles(), getAccount()]);
   return (
     <html lang="en-GB">
       <body className="antialiased">
@@ -32,7 +34,7 @@ export default function RootLayout({
             <ProfilesProvider profiles={profiles}>
               <MyListingProvider>
                 <FiltersProvider>
-                  <SavedProvider>{children}</SavedProvider>
+                  <SavedProvider signedIn={Boolean(account)}>{children}</SavedProvider>
                 </FiltersProvider>
               </MyListingProvider>
             </ProfilesProvider>

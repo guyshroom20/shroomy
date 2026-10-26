@@ -47,6 +47,7 @@ function toProfile(row: ListingRow, urls: Map<string, string>, origin?: { lat: n
 
   return {
     id: row.slug,
+    listingId: row.id,
     displayName: row.display_name,
     age: row.age,
     // Only ID-verified advertisers can be published.
@@ -103,4 +104,33 @@ export async function getProfileBySlug(slug: string) {
   if (!data) return null;
   const row = data as ListingRow;
   return { profile: toProfile(row, await signPhotos([row])), listingId: row.id, advertiserId: row.advertiser_id };
+}
+
+/** Profiles for a set of listing ids, keyed by id. Unpublished ones are left out unless the viewer may see them. */
+export async function getProfilesByListingIds(ids: string[]) {
+  if (ids.length === 0) return new Map<string, Profile>();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("listings").select("*, listing_photos(*)").in("id", ids);
+  if (error) throw error;
+  const rows = data as ListingRow[];
+  const urls = await signPhotos(rows);
+  return new Map(rows.map((r) => [r.id, toProfile(r, urls)]));
+}
+
+/** Stand-in profile for a visitor, shown to advertisers in chat. Visitors have no public profile. */
+export function visitorProfile(id: string, name: string): Profile {
+  return {
+    id: "",
+    displayName: name,
+    age: 0,
+    verified: false,
+    availability: "offline",
+    area: "",
+    distanceMiles: 0,
+    mapPosition: { x: 0.5, y: 0.5 },
+    bio: "",
+    tags: [],
+    photos: [{ tint: tintFor(id.replace(/-/g, "")), alt: name }],
+    lockedCount: 0,
+  };
 }
