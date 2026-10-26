@@ -3,11 +3,12 @@
 import { Heart } from "lucide-react";
 import Link from "next/link";
 import { ProfileTile } from "@/components/profile/ProfileTile";
-import { profiles } from "@/lib/mock-data";
+import { useProfiles } from "@/lib/profiles";
 import { useSaved } from "@/lib/saved";
 
 export default function SavedPage() {
   const { saved } = useSaved();
+  const profiles = useProfiles();
   const list = profiles.filter((p) => saved.has(p.id));
   return (
     <main className="pb-32">

@@ -1,9 +1,11 @@
 "use client";
 
-import { Compass, Flame, Heart, MapPin, MessageCircle, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
+import { Bookmark, Compass, Flame, Heart, MapPin, MessageCircle, RotateCcw, ShieldCheck, Store, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useFilters } from "@/lib/filters";
+import { useMyListing } from "@/lib/my-listing";
 import { useSaved } from "@/lib/saved";
 import { useToast } from "@/lib/toast";
 import { Sheet } from "./Sheet";
@@ -27,7 +29,9 @@ const row = "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text
 
 export function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [safety, setSafety] = useState(false);
-  const { reset } = useFilters();
+  const { reset, savedSearches, applySearch } = useFilters();
+  const { listing } = useMyListing();
+  const router = useRouter();
   const { saved, clear } = useSaved();
   const toast = useToast();
 
@@ -45,6 +49,33 @@ export function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => vo
             ))}
           </ul>
         </nav>
+        <hr className="my-3 border-line" />
+        <Link href={listing ? "/me" : "/me/edit"} onClick={onClose} className={row}>
+          <Store className="size-5 text-accent" />
+          <span className="flex-1">My listing</span>
+          {!listing && <span className="text-[13px] text-fg-subtle">Create</span>}
+        </Link>
+        {savedSearches.length > 0 && (
+          <>
+            <hr className="my-3 border-line" />
+            <h3 className="px-3 pb-1 text-[13px] uppercase tracking-wide text-fg-subtle">Saved searches</h3>
+            {savedSearches.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={row}
+                onClick={() => {
+                  applySearch(s.id);
+                  onClose();
+                  router.push("/explore");
+                  toast(`Applied “${s.name}”`);
+                }}
+              >
+                <Bookmark className="size-5 text-fg-muted" /> {s.name}
+              </button>
+            ))}
+          </>
+        )}
         <hr className="my-3 border-line" />
         <button type="button" className={row} onClick={() => setSafety(true)}>
           <ShieldCheck className="size-5 text-verified" /> Safety tips

@@ -3,6 +3,7 @@
 import { Bookmark, ChevronDown, EllipsisVertical } from "lucide-react";
 import Link from "next/link";
 import type { Profile } from "@/lib/types";
+import { MY_LISTING_ID } from "@/lib/my-listing";
 import { useSaved } from "@/lib/saved";
 import { useToast } from "@/lib/toast";
 import { IconButton } from "@/components/ui/IconButton";
@@ -49,6 +50,9 @@ export function ProfileCard({ profile, className, interactive = true, onHide }: 
       )}
 
       <div className="absolute inset-x-4 bottom-4">
+        {profile.id === MY_LISTING_ID && (
+          <span className="mb-2 inline-block rounded-full bg-accent px-2.5 py-1 text-[12px] font-medium text-accent-fg">Your listing</span>
+        )}
         <h2 className="flex items-center gap-2 text-[32px] font-semibold leading-none tracking-[-0.03em]">
           {profile.displayName}, {profile.age}
           {profile.verified && <VerifiedBadge className="size-7" />}

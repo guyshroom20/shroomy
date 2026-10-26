@@ -26,6 +26,10 @@ export type Profile = {
   photos: Photo[];
   lockedCount: number;
   story?: Story;
+  /** When the listing first went live (ISO). Used for "newest" sorting. */
+  createdAt?: string;
+  /** Last time the advertiser was active (ISO). Used for "recently active" sorting. */
+  lastActiveAt?: string;
 };
 
 export type Story = {

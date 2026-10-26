@@ -25,6 +25,8 @@ const photos = (seed: number, name: string, ids: number[]) =>
 export const profiles: Profile[] = [
   {
     id: "helen",
+    createdAt: "2026-09-02T10:00:00Z",
+    lastActiveAt: "2026-10-26T18:21:30Z",
     displayName: "Helen",
     age: 23,
     verified: true,
@@ -52,6 +54,8 @@ export const profiles: Profile[] = [
   },
   {
     id: "viktoria",
+    createdAt: "2026-10-20T09:00:00Z",
+    lastActiveAt: "2026-10-26T15:12:00Z",
     displayName: "Viktoria",
     age: 24,
     verified: true,
@@ -75,6 +79,8 @@ export const profiles: Profile[] = [
   },
   {
     id: "angel",
+    createdAt: "2026-08-14T12:00:00Z",
+    lastActiveAt: "2026-10-25T22:00:00Z",
     displayName: "Angel",
     age: 22,
     verified: true,
@@ -92,6 +98,8 @@ export const profiles: Profile[] = [
   },
   {
     id: "eliza",
+    createdAt: "2026-07-30T08:00:00Z",
+    lastActiveAt: "2026-10-24T11:30:00Z",
     displayName: "Eliza",
     age: 26,
     verified: true,
@@ -109,6 +117,8 @@ export const profiles: Profile[] = [
   },
   {
     id: "carmen",
+    createdAt: "2026-10-24T16:00:00Z",
+    lastActiveAt: "2026-10-26T12:40:00Z",
     displayName: "Carmen",
     age: 25,
     verified: false,
@@ -126,6 +136,8 @@ export const profiles: Profile[] = [
   },
   {
     id: "valentyna",
+    createdAt: "2026-10-01T11:00:00Z",
+    lastActiveAt: "2026-10-26T09:05:00Z",
     displayName: "Valentyna",
     age: 27,
     verified: true,
@@ -140,6 +152,8 @@ export const profiles: Profile[] = [
   },
   {
     id: "evelin",
+    createdAt: "2026-06-18T14:00:00Z",
+    lastActiveAt: "2026-10-23T20:15:00Z",
     displayName: "Evelin",
     age: 29,
     verified: true,

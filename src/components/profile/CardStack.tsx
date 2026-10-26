@@ -4,6 +4,7 @@ import { Heart, SearchX, X } from "lucide-react";
 import { useRef, useState } from "react";
 import type { Profile } from "@/lib/types";
 import { useFilteredProfiles, useFilters } from "@/lib/filters";
+import { useWithMyListing } from "@/lib/my-listing";
 import { useSaved } from "@/lib/saved";
 import { useToast } from "@/lib/toast";
 import { IconButton } from "@/components/ui/IconButton";
@@ -21,7 +22,7 @@ export function CardStack({ profiles: all }: { profiles: Profile[] }) {
   const { toggle, isSaved } = useSaved();
   const { reset } = useFilters();
   const toast = useToast();
-  const profiles = useFilteredProfiles(all).filter((p) => !hidden.has(p.id));
+  const profiles = useFilteredProfiles(useWithMyListing(all)).filter((p) => !hidden.has(p.id));
 
   if (profiles.length === 0) {
     return (

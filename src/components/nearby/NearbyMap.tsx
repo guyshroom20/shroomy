@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Profile } from "@/lib/types";
 import { useFilteredProfiles } from "@/lib/filters";
+import { useWithMyListing } from "@/lib/my-listing";
 import { useToast } from "@/lib/toast";
 import { PhotoFill } from "@/components/ui/PhotoFill";
 import { StatusPill } from "@/components/ui/StatusPill";
@@ -17,7 +18,7 @@ import { MapBackdrop } from "./MapBackdrop";
  * server side) so an advertiser's real location is never exposed.
  */
 export function NearbyMap({ profiles: all }: { profiles: Profile[] }) {
-  const profiles = useFilteredProfiles(all);
+  const profiles = useFilteredProfiles(useWithMyListing(all));
   const [pickedId, setPickedId] = useState<string>();
   const toast = useToast();
   // Fall back to the first visible pin when the picked one is filtered out.

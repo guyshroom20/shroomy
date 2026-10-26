@@ -1,10 +1,11 @@
 "use client";
 
-import { EyeOff, Flag, Share2, UserRound } from "lucide-react";
+import { EyeOff, Flag, Pencil, Share2, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Profile } from "@/lib/types";
 import { useToast } from "@/lib/toast";
+import { MY_LISTING_ID } from "@/lib/my-listing";
 import { ReportSheet } from "@/components/ui/ReportSheet";
 
 const item = "flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-3";
@@ -62,11 +63,19 @@ export function ProfileMenu({ profile, onHide, children }: Props) {
               </button>
             </li>
           )}
-          <li>
-            <button type="button" className={`${item} text-red-400`} onClick={() => { setOpen(false); setReport(true); }}>
-              <Flag className="size-4" /> Report
-            </button>
-          </li>
+          {profile.id === MY_LISTING_ID ? (
+            <li>
+              <Link href="/me/edit" className={item}>
+                <Pencil className="size-4 text-fg-muted" /> Edit listing
+              </Link>
+            </li>
+          ) : (
+            <li>
+              <button type="button" className={`${item} text-red-400`} onClick={() => { setOpen(false); setReport(true); }}>
+                <Flag className="size-4" /> Report
+              </button>
+            </li>
+          )}
         </ul>
       )}
       <ReportSheet open={report} onClose={() => setReport(false)} name={profile.displayName} />

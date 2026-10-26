@@ -3,6 +3,7 @@
 import { Heart } from "lucide-react";
 import Link from "next/link";
 import type { Profile } from "@/lib/types";
+import { MY_LISTING_ID } from "@/lib/my-listing";
 import { useSaved } from "@/lib/saved";
 import { PhotoFill } from "@/components/ui/PhotoFill";
 import { cn } from "@/lib/cn";
@@ -19,6 +20,9 @@ export function ProfileTile({ profile }: { profile: Profile }) {
         <h3 className="absolute inset-x-4 top-4 text-[26px] font-semibold leading-[1.05] tracking-[-0.03em]">
           {profile.displayName}
           <span className="mt-1 block text-[13px] font-normal tracking-normal text-fg/80">{profile.area.split(",")[0]}</span>
+          {profile.id === MY_LISTING_ID && (
+            <span className="mt-2 inline-block rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium tracking-normal text-accent-fg">You</span>
+          )}
         </h3>
       </Link>
       <button

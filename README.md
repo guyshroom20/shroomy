@@ -19,6 +19,8 @@ npm run dev
 | `/stories/[id]` | Story viewer with reply box |
 | `/messages` | Inbox with story rail |
 | `/messages/[id]` | Conversation |
+| `/me` | My listing: the advertiser's own profile as visitors see it |
+| `/me/edit` | Listing editor: details, tags, photos (cover, order, 18+ lock), story |
 
 ## Theming
 
@@ -34,7 +36,9 @@ Everything below runs on client state, so it resets on reload unless noted:
 
 - Photo gallery: tap the profile hero or any thumbnail (swipe, arrow keys, Esc)
 - 18+ tile: age confirmation and access request
-- Filters (age, distance, ID verified, available now) shared by For You, Nearby and Explore; saved to `localStorage`
+- Search (name, area, bio, tags) and filters (age range, distance, area, interests, available now, ID verified, has photos, has 18+ content, sort) shared by For You, Nearby and Explore; saved to `localStorage`
+- Saved searches: name the current search in the filter sheet, re-apply it there or from the ☰ menu
+- My listing (`src/lib/my-listing.tsx`): a local store shaped like the backend's `listings` / `listing_photos` rows, with the same limits. Swap `save` for `saveListing` + `uploadListingPhoto` when Supabase is on
 - Card options: view, share/copy link, not interested, report; bookmark saves
 - Side menu: navigation, safety tips, reset filters, clear saved
 - Map recentre selects the nearest profile

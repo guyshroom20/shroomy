@@ -3,8 +3,8 @@
 import { AlignLeft, Flame, MapPin, SlidersHorizontal } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { activeChips, useFilteredProfiles, useFilters } from "@/lib/filters";
-import { profiles } from "@/lib/mock-data";
+import { activeCount as countActive, useFilters } from "@/lib/filters";
+import { useProfiles } from "@/lib/profiles";
 import { FilterSheet } from "./FilterSheet";
 import { IconButton } from "./IconButton";
 import { MenuDrawer } from "./MenuDrawer";
@@ -17,8 +17,8 @@ export function DiscoverTopBar() {
   const [menu, setMenu] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { filters } = useFilters();
-  const results = useFilteredProfiles(profiles);
-  const activeCount = activeChips(filters).length;
+  const profiles = useProfiles();
+  const activeCount = countActive(filters);
   return (
     <header className="relative z-20 flex items-center justify-between px-4 pt-4">
       <IconButton label="Menu" onClick={() => setMenu(true)}>
@@ -39,7 +39,7 @@ export function DiscoverTopBar() {
         )}
       </IconButton>
       <MenuDrawer open={menu} onClose={() => setMenu(false)} />
-      <FilterSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} resultCount={results.length} />
+      <FilterSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} profiles={profiles} />
     </header>
   );
 }
