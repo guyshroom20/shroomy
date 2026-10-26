@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# shroom web app
 
-## Getting Started
-
-First, run the development server:
+Mobile-first Next.js app for the verified UK directory. Phase 1 UI only: data is mocked in `src/lib/mock-data.ts`.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Screens
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Route | Screen |
+| --- | --- |
+| `/` | For You card stack (swipe right or tap the heart to save) |
+| `/nearby` | Map of nearby profiles (area-level, fuzzed positions) |
+| `/explore` | Grid with removable filter chips |
+| `/saved` | Saved profiles |
+| `/profile/[id]` | Profile: photos, locked 18+ tile, about, tags |
+| `/stories/[id]` | Story viewer with reply box |
+| `/messages` | Inbox with story rail |
+| `/messages/[id]` | Conversation |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Theming
 
-## Learn More
+All colours are tokens in `src/app/globals.css`. Change the `:root` block to rebrand.
 
-To learn more about Next.js, take a look at the following resources:
+## Not wired yet
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- API, auth and real photos (`PhotoFill` shows a gradient until `src` is set)
+- Real map tiles (`MapBackdrop` is a placeholder for MapLibre)
+- Realtime chat backend, block and report actions
